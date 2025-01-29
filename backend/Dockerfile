@@ -8,7 +8,7 @@ RUN npm install
 COPY . .
 
 RUN npm run build
-EXPOSE 3001
+EXPOSE 4000
 
 # Start the app
 CMD ["npm", "start"]
