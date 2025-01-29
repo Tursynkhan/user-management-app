@@ -2,7 +2,7 @@ services:
   - type: web
     name: user-management-api
     runtime: docker
-    repo: https://github.com/yourusername/user-management-app
+    repo: https://github.com/tursynkhan/user-management-app
     branch: main
     envVars:
       - key: DB_HOST
