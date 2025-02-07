@@ -1,15 +1,24 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  status: string;
+  last_login: string;
+}
+const API_URL = import.meta.env.VITE_API_URL;
+
 const Dashboard = () => {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<User[]>([]);
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    axios.get("http://your-droplet-ip:3001/users", {
+    axios.get(`${API_URL}/users`, {
       headers: { Authorization: `Bearer ${token}` }
     })
-    .then((res) => setUsers(res.data))
+    .then((res) => setUsers(res.data as User[]))
     .catch((err) => console.error(err));
   }, []);
 
