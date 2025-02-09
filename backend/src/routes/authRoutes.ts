@@ -1,16 +1,21 @@
-import { Router, Request, Response } from 'express';
-import { createUser, findUserByEmail } from '../models/userModel';
-import * as bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import { Router } from "express";
+import { registerUser, loginUser } from "../controllers/authControllers";
 
 const router = Router();
+
+/**
+ * @swagger
+ * tags:
+ *   name: Authentication
+ *   description: User authentication endpoints
+ */
 
 /**
  * @swagger
  * /auth/register:
  *   post:
  *     summary: Register a new user
- *     description: Create a new user account with name, email, and password
+ *     tags: [Authentication]
  *     requestBody:
  *       required: true
  *       content:
@@ -25,27 +30,19 @@ const router = Router();
  *               password:
  *                 type: string
  *     responses:
- *       200:
+ *       201:
  *         description: Registration successful
  *       400:
- *         description: Error during registration
+ *         description: User already exists
  */
-router.post('/register', async (req: Request, res: Response): Promise<void> => {
-  const { name, email, password } = req.body;
-  try {
-    await createUser(name, email, password);
-    res.json({ message: 'Registration successful' });
-  } catch (error) {
-    res.status(400).json({ message: 'Error during registration' });
-  }
-});
+router.post("/register", registerUser);
 
 /**
  * @swagger
  * /auth/login:
  *   post:
- *     summary: Login user
- *     description: Authenticate a user with email and password
+ *     summary: Authenticate user
+ *     tags: [Authentication]
  *     requestBody:
  *       required: true
  *       content:
@@ -60,32 +57,11 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
  *     responses:
  *       200:
  *         description: Successfully authenticated
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
  *       401:
  *         description: Invalid credentials
+ *       403:
+ *         description: User is blocked
  */
-router.post('/login', async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
-  const user = await findUserByEmail(email);
-  if (!user) {
-    res.status(401).json({ message: 'Invalid credentials' });
-    return;
-  }
-
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) {
-    res.status(401).json({ message: 'Invalid credentials' });
-    return;
-  }
-
-  const token = jwt.sign({ id: user.id }, 'secret', { expiresIn: '1h' });
-  res.json({ token });
-});
+router.post("/login", loginUser);
 
 export default router;

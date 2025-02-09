@@ -1,46 +1,40 @@
-import { Router } from 'express';
-import { getAllUsers, updateUserStatus, deleteUserByIds } from '../models/userModel';
+import { Router } from "express";
+import { getUsers, modifyUsers } from "../controllers/userControllers";
+import { verifyUserMiddleware } from "../middleware/authMiddleware";
 
 const router = Router();
 
 /**
  * @swagger
+ * tags:
+ *   name: Users
+ *   description: User management endpoints
+ */
+
+/**
+ * @swagger
  * /users:
  *   get:
- *     summary: Get all users
- *     description: Retrieve a list of all users
+ *     summary: Get list of users
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     responses:
  *       200:
- *         description: List of users retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                   name:
- *                     type: string
- *                   email:
- *                     type: string
- *                   last_login:
- *                     type: string
- *                   status:
- *                     type: string
+ *         description: Returns the list of users
+ *       401:
+ *         description: Unauthorized
  */
-router.get('/', async (req, res) => {
-  const users = await getAllUsers();
-  res.json(users);
-});
+router.get("/", verifyUserMiddleware, getUsers);
 
 /**
  * @swagger
  * /users/action:
  *   post:
- *     summary: Perform action on users
- *     description: Block, unblock, or delete users by ID
+ *     summary: Perform bulk actions on users (block, unblock, delete)
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -51,28 +45,18 @@ router.get('/', async (req, res) => {
  *               ids:
  *                 type: array
  *                 items:
- *                   type: integer
+ *                   type: string
  *               action:
  *                 type: string
- *                 enum: [delete, blocked, active]
+ *                 enum: [block, unblock, delete]
  *     responses:
  *       200:
  *         description: Action performed successfully
  *       400:
- *         description: Error performing action
+ *         description: Invalid request
+ *       401:
+ *         description: Unauthorized
  */
-router.post('/action', async (req, res) => {
-  const { ids, action } = req.body;
-  try {
-    if (action === 'delete') {
-      await deleteUserByIds(ids);
-    } else {
-      await updateUserStatus(ids, action);
-    }
-    res.json({ message: 'Action performed successfully' });
-  } catch (error) {
-    res.status(400).json({ message: 'Error performing action' });
-  }
-});
+router.post("/action", verifyUserMiddleware, modifyUsers);
 
 export default router;

@@ -1,33 +1,36 @@
-import * as jwt from 'jsonwebtoken';
-import pool from '../config/database';
 import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import db  from "../config/database";
 
+interface AuthRequest extends Request {
+  user?: { id: string };
+}
 
-type DecodedToken = { id: number };
-
-export const verifyUserMiddleware = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  const token = req.headers.authorization;
-  if (!token) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-
+export const verifyUserMiddleware = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret") as DecodedToken;
-    const user = await pool.query("SELECT * FROM users WHERE id = $1", [decoded.id]);
-
-    if (user.rows.length === 0 || user.rows[0].status === "blocked") {
-      res.status(403).json({ message: "Access denied" });
+    const token = req.header("Authorization")?.split(" ")[1];
+    if (!token) {
+      res.status(401).json({ message: "Unauthorized: No token provided" });
       return;
     }
 
-    (req as any).user = user.rows[0];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string };
+    req.user = { id: decoded.id };
+
+    const userResult = await db.query("SELECT status FROM users WHERE id = $1", [decoded.id]);
+    if (userResult.rows.length === 0) {
+      res.status(401).json({ message: "Unauthorized: User does not exist" });
+      return;
+    }
+
+    const userStatus = userResult.rows[0].status;
+    if (userStatus === "blocked") {
+      res.status(403).json({ message: "Access denied: User is blocked" });
+      return;
+    }
+
     next();
   } catch (error) {
-    res.status(401).json({ message: "Invalid token" });
+    res.status(401).json({ message: "Unauthorized: Invalid token" });
   }
 };

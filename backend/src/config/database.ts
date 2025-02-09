@@ -2,7 +2,7 @@ import { Pool } from "pg";
 import dotenv from "dotenv";
 dotenv.config();
 
-const pool = new Pool({
+const db = new Pool({
   user: process.env.DB_USER as string,
   host: process.env.DB_HOST as string,
   database: process.env.DB_NAME as string,
@@ -12,7 +12,7 @@ const pool = new Pool({
 
 const testDB = async () => {
   try {
-    const client = await pool.connect();
+    const client = await db.connect();
     console.log("✅ Database connected successfully!");
     client.release();
   } catch (error) {
@@ -26,4 +26,4 @@ const testDB = async () => {
 
 testDB()
 
-export default pool;
+export default db;
