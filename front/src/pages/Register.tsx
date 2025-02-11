@@ -12,25 +12,50 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validateName = (name: string) => /^[a-zA-Zа-яА-Я\s]{2,}$/.test(name); 
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
+    if (!name || !email || !password) {
+      setError("All fields are required.");
+      return;
+    }
+    if (!validateName(name)) {
+      setError("Name must contain only letters and be at least 2 characters long.");
+      return;
+    }
+    if (!validateEmail(email)) {
+      setError("Invalid email format.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setLoading(true);
     try {
       await axios.post(`${API_URL}/auth/register`, { name, email, password });
       navigate("/login");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Registration error:", error);
-      if (error.response) {
-        setError(error.response.data.message || "Registration failed");
+
+      if (typeof error === "object" && error !== null && "response" in error) {
+        const axiosError = error as { response: { data?: { message?: string } } };
+        setError(axiosError.response.data?.message || "Registration failed");
+      } else if (error instanceof Error) {
+        setError(error.message);
       } else {
-        setError("Network error, please try again.");
+        setError("An unknown error occurred.");
       }
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="h-screen max-w-[800px] mx-auto flex justify-center items-center">

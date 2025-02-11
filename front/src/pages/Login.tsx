@@ -12,21 +12,40 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
+    if (!email || !password) {
+      setError("All fields are required.");
+      return;
+    }
+    if (!validateEmail(email)) {
+      setError("Invalid email format.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setLoading(true);
     try {
       const response = await axios.post<{ token: string }>(`${API_URL}/auth/login`, { email, password });
       localStorage.setItem("token", response.data.token);
       navigate("/");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
-      if (error.response) {
-        setError(error.response.data.message || "Invalid credentials");
+
+      if (typeof error === "object" && error !== null && "response" in error) {
+        const axiosError = error as { response: { data?: { message?: string } } };
+        setError(axiosError.response.data?.message || "Invalid credentials");
+      } else if (error instanceof Error) {
+        setError(error.message);
       } else {
-        setError("Network error, please try again.");
+        setError("An unknown error occurred.");
       }
     } finally {
       setLoading(false);
